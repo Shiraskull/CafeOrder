@@ -4,21 +4,21 @@ const emailRouteComponent = () => import('@/pages/apps/email/index.vue')
 export const redirects = [
   // ℹ️ We are redirecting to different pages based on role.
   // NOTE: Role is just for UI purposes. ACL is based on abilities.
-  {
-    path: '/',
-    name: 'index',
-    redirect: to => {
-      // TODO: Get type from backend
-      const userData = useCookie('userData')
-      const userRole = userData.value?.role
-      if (userRole === 'admin')
-        return { name: 'dashboards-crm' }
-      if (userRole === 'client')
-        return { name: 'access-control' }
+  // {
+  //   path: '/',
+  //   name: 'index',
+  //   redirect: to => {
+  //     // TODO: Get type from backend
+  //     const userData = useCookie('userData')
+  //     const userRole = userData.value?.role
+  //     if (userRole === 'admin')
+  //       return { name: 'dashboards-crm' }
+  //     if (userRole === 'client')
+  //       return { name: 'access-control' }
       
-      return { name: 'login', query: to.query }
-    },
-  },
+  //     return { name: 'login', query: to.query }
+  //   },
+  // },
   {
     path: '/pages/user-profile',
     name: 'pages-user-profile',
@@ -29,6 +29,7 @@ export const redirects = [
     name: 'pages-account-settings',
     redirect: () => ({ name: 'pages-account-settings-tab', params: { tab: 'account' } }),
   },
+  
 ]
 export const routes = [
   // Email filter
@@ -41,7 +42,15 @@ export const routes = [
       layoutWrapperClasses: 'layout-content-height-fixed',
     },
   },
-
+{
+  path: '/myLogon',
+  name: 'myLogon',  // nama bebas, untuk navigasi
+  component: () => import('@/pages/login.vue'),
+  meta: {
+    layout: 'blank',
+    unauthenticatedOnly: true,
+  },
+},
   // Email label
   {
     path: '/apps/email/label/:label',

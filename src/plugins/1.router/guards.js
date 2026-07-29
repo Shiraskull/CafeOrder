@@ -12,22 +12,22 @@ export const setupGuards = router => {
          */
           const userData = localStorage.getItem('userData')
           const isLoggedIn = !!userData
-          const isLoginPage = to.name === 'login'
+          const isLoginPage = to.name === 'myLogon'
         console.log(to);
       
+    if (to.path === '/' || to.name === 'root') return true
     
-
     /**
-         * Check if user is logged in by checking if token & user data exists in local storage
-         * Feel free to update this logic to suit your needs
-         */
-        if (isLoginPage) return true
-
-      // Jika belum login dan mencoba masuk ke halaman yang bukan login
-      if (!isLoggedIn) {
+     * Check if user is logged in by checking if token & user data exists in local storage
+     * Feel free to update this logic to suit your needs
+    */
+   if (isLoginPage) return true
+   
+   // Jika belum login dan mencoba masuk ke halaman yang bukan login
+   if (!isLoggedIn) {
         return {
-          name: 'login',
-          query: { to: to.fullPath },
+          name: 'index',
+          query: { to: 'myLogon' },
         }
       }
     /*

@@ -1,466 +1,73 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import api from "@/plugins/axios";
 
+/**
+ * Store pesanan kasir/dapur: data utama dari GET /pesanans/details (lihat fetchOrder).
+ * Getter memisahkan tampilan — cookingOrders (dapur), cashierOrders (kasir aktif), completedOrders.
+ */
 export const useOrderStore =  defineStore('order',()=>{
-     // ========== DATA DUMMY ==========
-const orders = ref([
-  // ========== STATUS: ORDER (MENUNGGU DIPROSES) ==========
-  { 
-    id: 1, 
-    meja: 'Meja 7',
-    status: 'order',
-    items: [
-      { 
-        name: 'Nasi Goreng', 
-        qty: 2, 
-        catatan: 'Pedas', 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Teh Manis', 
-        qty: 1, 
-        price: 5000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Mie Ayam', 
-        qty: 2, 
-        catatan: 'Pangsit', 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 30),
-  },
-  { 
-    id: 2, 
-    meja: 'Meja 12',
-    status: 'order',
-    items: [
-      { 
-        name: 'Mie Ayam', 
-        qty: 2, 
-        catatan: 'Pangsit', 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Jeruk', 
-        qty: 2, 
-        price: 8000,
-        image: 'https://images.unsplash.com/photo-1621265017611-23b2f3d2d1e8?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 32),
-  },
-  { 
-    id: 3, 
-    meja: 'Meja 3',
-    status: 'order',
-    items: [
-      { 
-        name: 'Soto Ayam', 
-        qty: 1, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Krupuk', 
-        qty: 2, 
-        price: 2000,
-        image: 'https://images.unsplash.com/photo-1611364004717-9b5d5b5b5b5b?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 35),
-  },
-  { 
-    id: 4, 
-    meja: 'Meja 19',
-    status: 'order',
-    items: [
-      { 
-        name: 'Bakso Urat', 
-        qty: 3, 
-        catatan: 'Pedas', 
-        price: 30000,
-        image: 'https://images.unsplash.com/photo-1625314897518-5bdf5217e22a?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Teh Tawar', 
-        qty: 2, 
-        price: 3000,
-        image: 'https://images.unsplash.com/photo-1544787219-6f284303f1a9?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 38),
-  },
-  { 
-    id: 5, 
-    meja: 'Meja 5',
-    status: 'order',
-    items: [
-      { 
-        name: 'Nasi Goreng Seafood', 
-        qty: 1, 
-        price: 35000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Jus Alpukat', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 40),
-  },
-  { 
-    id: 6, 
-    meja: 'Meja 15',
-    status: 'order',
-    items: [
-      { 
-        name: 'Mie Goreng', 
-        qty: 2, 
-        catatan: 'Telur', 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Teh Botol', 
-        qty: 2, 
-        price: 7000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 42),
-  },
-  { 
-    id: 7, 
-    meja: 'Meja 9',
-    status: 'order',
-    items: [
-      { 
-        name: 'Ayam Goreng', 
-        qty: 2, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Nasi Putih', 
-        qty: 2, 
-        price: 5000,
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 45),
-  },
+  /**
+   * Satu-satunya sumber data order setelah fetch API.
+   * Bentuk: array of { nomor: "Meja 1", orders: [ { id, waktu, status, items, ... } ] }
+   * Diisi oleh fetchOrder(); kosong sampai fetch sukses.
+   */
+  const orders = ref([]);
 
-  // ========== STATUS: ANTAR (SIAP DIANTAR KE MEJA) ==========
-  { 
-    id: 8, 
-    meja: 'Meja 2',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Nasi Goreng', 
-        qty: 1, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Teh Manis', 
-        qty: 2, 
-        price: 5000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 15),
-  },
-  { 
-    id: 9, 
-    meja: 'Meja 18',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Mie Ayam', 
-        qty: 2, 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Pisang Goreng', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1614849286521-4c58b2f0ff15?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 18),
-  },
-  { 
-    id: 10, 
-    meja: 'Meja 6',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Soto Ayam', 
-        qty: 1, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Campur', 
-        qty: 1, 
-        price: 18000,
-        image: 'https://images.unsplash.com/photo-1621265017611-23b2f3d2d1e8?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 20),
-  },
-  { 
-    id: 11, 
-    meja: 'Meja 14',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Bakso Urat', 
-        qty: 2, 
-        price: 30000,
-        image: 'https://images.unsplash.com/photo-1625314897518-5bdf5217e22a?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Jeruk', 
-        qty: 1, 
-        price: 8000,
-        image: 'https://images.unsplash.com/photo-1621265017611-23b2f3d2d1e8?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 22),
-  },
-  { 
-    id: 12, 
-    meja: 'Meja 1',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Nasi Goreng', 
-        qty: 1, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Jus Alpukat', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Pisang Goreng', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1614849286521-4c58b2f0ff15?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 25),
-  },
-  { 
-    id: 13, 
-    meja: 'Meja 11',
-    status: 'antar',
-    items: [
-      { 
-        name: 'Mie Goreng', 
-        qty: 2, 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Teh Botol', 
-        qty: 1, 
-        price: 7000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 28),
-  },
+  /**
+   * Dapur — sementara: semua pesanan per meja (filter status dimatikan).
+   * Nanti aktifkan lagi: hanya `order.status === 'order'`.
+   */
+const cookingOrders = computed(() => {
+  return orders.value
+    .map(meja => ({
+      ...meja,
+      orders: [...(meja.orders || [])],
+      // orders: meja.orders.filter(order => order.status === 'order'),
+    }))
+    .filter(meja => meja.orders.length > 0)
+})
 
-  // ========== STATUS: SELESAI (SUDAH DIBAYAR) ==========
-  { 
-    id: 14, 
-    meja: 'Meja 20',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Nasi Goreng', 
-        qty: 3, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Teh Manis', 
-        qty: 3, 
-        price: 5000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 11, 30),
-    waktuSelesai: new Date(2026, 1, 28, 12, 10),
-  },
-  { 
-    id: 15, 
-    meja: 'Meja 4',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Mie Ayam', 
-        qty: 2, 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Pisang Goreng', 
-        qty: 2, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1614849286521-4c58b2f0ff15?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Jeruk', 
-        qty: 2, 
-        price: 8000,
-        image: 'https://images.unsplash.com/photo-1621265017611-23b2f3d2d1e8?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 11, 45),
-    waktuSelesai: new Date(2026, 1, 28, 12, 20),
-  },
-  { 
-    id: 16, 
-    meja: 'Meja 13',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Soto Ayam', 
-        qty: 2, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Krupuk', 
-        qty: 4, 
-        price: 2000,
-        image: 'https://images.unsplash.com/photo-1611364004717-9b5d5b5b5b5b?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 11, 50),
-    waktuSelesai: new Date(2026, 1, 28, 12, 25),
-  },
-  { 
-    id: 17, 
-    meja: 'Meja 8',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Bakso Urat', 
-        qty: 2, 
-        price: 30000,
-        image: 'https://images.unsplash.com/photo-1625314897518-5bdf5217e22a?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Es Teh Tawar', 
-        qty: 2, 
-        price: 3000,
-        image: 'https://images.unsplash.com/photo-1544787219-6f284303f1a9?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 11, 55),
-    waktuSelesai: new Date(2026, 1, 28, 12, 30),
-  },
-  { 
-    id: 18, 
-    meja: 'Meja 16',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Nasi Goreng Seafood', 
-        qty: 1, 
-        price: 35000,
-        image: 'https://images.unsplash.com/photo-1644592655775-973c748e2c8f?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Jus Alpukat', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Pisang Goreng', 
-        qty: 1, 
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1614849286521-4c58b2f0ff15?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 11),
-    waktuSelesai: new Date(2026, 1, 28, 12, 35),
-  },
-  { 
-    id: 19, 
-    meja: 'Meja 10',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Mie Goreng', 
-        qty: 2, 
-        price: 20000,
-        image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Teh Botol', 
-        qty: 2, 
-        price: 7000,
-        image: 'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 23),
-    waktuSelesai: new Date(2026, 1, 28, 12, 40),
-  },
-  { 
-    id: 20, 
-    meja: 'Meja 17',
-    status: 'selesai',
-    items: [
-      { 
-        name: 'Ayam Goreng', 
-        qty: 2, 
-        price: 25000,
-        image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=100&h=100&fit=crop'
-      },
-      { 
-        name: 'Nasi Putih', 
-        qty: 2, 
-        price: 5000,
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'
-      }
-    ],
-    waktuMulai: new Date(2026, 1, 28, 12, 10),
-    waktuSelesai: new Date(2026, 1, 28, 12, 45),
-  }
-])
+  /**
+   * Kasir / index meja — sementara: semua pesanan (tanpa filter order|antar|selesai).
+   * Nanti aktifkan lagi: filter `['order', 'antar'].includes(order.status)`.
+   */
+const cashierOrders  = computed(() => {
+  return orders.value
+    .map(meja => ({
+      ...meja,
+      orders: [...(meja.orders || [])],
+      // orders: meja.orders.filter(order => ['order', 'antar'].includes(order.status)),
+    }))
+    .filter(meja => meja.orders.length > 0)
+})
 
-  const cookingOrders = computed(() => orders.value.filter(order => order.status === 'order'))
-  const cashierOrders = computed(() => orders.value.filter(order =>['order', 'antar'].includes(order.status)))
-  const completedOrders = computed(() => orders.value.filter(order => order.status === 'selesai'))
+  /**
+   * Riwayat — sementara: sama seperti data penuh per meja (filter selesai dimatikan).
+   * Nanti aktifkan lagi: `order.status === 'selesai'`.
+   */
+const completedOrders  = computed(() => {
+  return orders.value
+    .map(meja => ({
+      ...meja,
+      orders: [...(meja.orders || [])],
+      // orders: meja.orders.filter(order => order.status === 'selesai'),
+    }))
+    .filter(meja => meja.orders.length > 0)
+})
+
 
 //   ===action===   
     function updateOrderStatus(orderId, newStatus) {
-        const order = orders.value.find(order => order.id === orderId)
-        if(order){
-             console.log(`🔄 Order #${orderId} (${order.meja}): ${order.status} → ${newStatus}`)
-             order.status = newStatus
-              if (newStatus === 'selesai') {
-                    order.waktuSelesai = new Date()
-                }
-        }
+        const table = orders.value.find(meja => meja.orders?.some(order => order.id === orderId))
+        const order = table?.orders?.find(order => order.id === orderId)
+        if (!order)
+          return
+
+        console.log(`🔄 Order #${orderId} (${table?.nomor || '-'}) : ${order.status} → ${newStatus}`)
+        order.status = newStatus
+        if (newStatus === 'selesai')
+          order.waktuSelesai = new Date()
     }
     function sendOrderToKitchen(orderId){
         updateOrderStatus(orderId,'order')
@@ -471,24 +78,104 @@ const orders = ref([
     function markAsPaid(orderId){
         updateOrderStatus(orderId,'selesai')
     }
-    function addOrder(newOrder) {
-    const newId = Math.max(...orders.value.map(o => o.id), 0) + 1
+  function addOrder(newOrder) {
+    const allOrderIds = orders.value.flatMap((m) => (m.orders || []).map((o) => Number(o.id) || 0));
+    const newId = (allOrderIds.length ? Math.max(...allOrderIds) : 0) + 1;
     orders.value.push({
       id: newId,
       ...newOrder,
-      status: 'order',
-      waktuMulai: new Date()
-    })
-    console.log(`✅ Order baru #${newId} ditambahkan`)
+      status: "order",
+      waktuMulai: new Date(),
+    });
+    console.log(`✅ Order baru #${newId} ditambahkan`);
   }
 
+  /**
+   * Buat pesanan (POST). Setelah sukses, panggil fetchOrder agar state mengikuti server.
+   *
+   * Endpoint: POST /pesanans/post — body sesuai API (mis. noMeja, noCafe, nama_order, method, cash, details[]).
+   */
+  async function createPesanan(payload) {
+    console.log();
+    
+    const res = await api.post("/pesanans/post", payload);
+    await fetchOrder();
+    return res.data;
+  }
+
+  /**
+   * Ambil daftar pesanan dari backend, lalu normalisasi ke bentuk orders (per meja).
+   *
+   * Endpoint: GET /pesanans/details (path relatif ke baseURL axios, mis. .../api/pesanans/details).
+   * Query ts: cache-busting agar tidak dapat response browser cache lama.
+   *
+   * Backend diharapkan mengembalikan { data: [ ... ] } — array pesanan per baris.
+   * Kalau array ada di key lain (mis. res.data saja), sesuaikan rawPesanans di bawah.
+   */
   async function fetchOrder() {
-    // Nanti ganti dengan: const response = await api.get('/tables')
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(orders.value)
-      }, 500) // Simulasi loading 500ms
-    })
+    try {
+      const res = await api.get("/pesanans/details", {
+        params: { ts: Date.now() },
+      });
+      // Opsional: lihat response lengkap; pastikan array ada di res.data.data
+      
+      const rawPesanans = res.data ?? [];
+      console.log(rawPesanans);
+
+      // Kumpulkan semua baris pesanan per nomor meja (noMeja dari API)
+      const byMeja = {};
+      for (const p of rawPesanans) {
+        const key = p.noMeja != null ? p.noMeja : "Lain";
+        if (!byMeja[key]) byMeja[key] = [];
+        byMeja[key].push(p);
+      }
+
+      // Ubah jadi struktur UI: satu entri per meja, banyak order di dalamnya
+      const grouped = Object.entries(byMeja)
+        .map(([mejaKey, pesananList]) => {
+          const sorted = [...pesananList].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+          return {
+            nomor: mejaKey === "Lain" ? "Meja Lain" : `Meja ${mejaKey}`,
+            idMeja: sorted[0]?.id_meja ?? sorted[0]?.meja_id ?? sorted[0]?.table_id ?? null,
+            tableName: sorted[0]?.table_name ?? sorted[0]?.nama_meja ?? sorted[0]?.nama ?? null,
+            tableCode: sorted[0]?.table_code ?? sorted[0]?.tableCode ?? null,
+            orders: sorted.map((p) => ({
+          id: String(p.id_pesan),
+          waktu: new Date(p.created_at),
+          // Sementara: semua di UI sebagai 'order' (filter getter sudah dimatikan).
+          // Nanti balikin: total > 0 dari API = lunas → 'selesai'.
+          // status: "order",
+          // status: p.total != null && p.total > 0 ? "selesai" : "order",
+          nama_order: p.nama_order,
+          no_pesanan: p.no_pesanan,
+          items: (p.details || []).map((d) => ({
+            name: d.nama_product ?? d.product?.nama ?? `Product ${d.product_id}`,
+            qty: d.jumlah ?? 0,
+            catatan: d.note || undefined,
+            price: d.harga ?? d.product?.harga ?? 0,
+            image: d.image ?? d.product?.image ?? "",
+          })),
+        })),
+          };
+        })
+        // Meja dengan aktivitas terbaru di atas (pakai waktu order pertama di grup)
+        .sort((a, b) => {
+          const timeA = a.orders[0]?.waktu ? new Date(a.orders[0].waktu) : 0;
+          const timeB = b.orders[0]?.waktu ? new Date(b.orders[0].waktu) : 0;
+          return timeB - timeA;
+        });
+
+      orders.value = grouped;
+      console.log(orders.value);
+      
+      return orders.value;
+    } catch (err) {
+      console.error("fetchOrder error:", err);
+      orders.value = [];
+      return [];
+    }
   }
   return {
     // state
@@ -500,6 +187,7 @@ const orders = ref([
     // actions
     updateOrderStatus,
     fetchOrder,
+    createPesanan,
     UpdateOrderStatus: updateOrderStatus,
     sendOrderToKitchen,
     sendOrder,

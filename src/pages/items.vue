@@ -1,5 +1,25 @@
 <script setup>
 import ItemFormDialog from '@/components/items/ItemFormDialog.vue'
+import { useCategoryStore } from '@/plugins/store/categoryStore'
+import { useProductStore } from '@/plugins/store/products'
+import { onMounted } from 'vue'
+
+const categoryStore = useCategoryStore()
+const productStore = useProductStore()
+
+const DEFAULT_CATEGORY_ID = 9
+
+function mapStoreProductToRow(p) {
+  return {
+    id: p.id,
+    nama: p.name,
+    harga: p.price,
+    foto: p.image,
+    kategori: p.category,
+    diskon: 0,
+    id_cafe: '',
+  }
+}
 
 definePage({
   meta: {
@@ -10,26 +30,7 @@ definePage({
 
 const formatRupiah = value => new Intl.NumberFormat('id-ID').format(Number(value) || 0)
 
-const items = ref([
-  {
-    id: 1,
-    nama: 'Espresso',
-    harga: 22000,
-    diskon: 0,
-    foto: 'https://images.unsplash.com/photo-1511537190424-bbbab87ac5eb?auto=format&fit=crop&w=400&q=80',
-    id_cafe: 'CAFE-001',
-    kategori: 'Minuman',
-  },
-  {
-    id: 2,
-    nama: 'Croissant',
-    harga: 18000,
-    diskon: 10,
-    foto: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=400&q=80',
-    id_cafe: 'CAFE-001',
-    kategori: 'Makanan',
-  },
-])
+const items = ref([])
 
 const isFormDialogOpen = ref(false)
 const selectedItem = ref(null)
@@ -56,6 +57,15 @@ const saveItem = payload => {
   })
 }
 
+onMounted(async () => {
+  try {
+    await productStore.fetchProducts()
+    items.value = productStore.productsByCategory(DEFAULT_CATEGORY_ID).map(mapStoreProductToRow)
+  } catch {
+    /* error tersimpan di productStore.error */
+  }
+  categoryStore.fetchCategoryById(DEFAULT_CATEGORY_ID).catch(() => {})
+})
 const deleteItem = id => {
   const isConfirmed = typeof window === 'undefined'
     ? true

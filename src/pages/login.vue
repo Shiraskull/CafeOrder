@@ -22,6 +22,8 @@ console.log(authV2Login);
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
+const deferredInstallPrompt = ref(null)
+const isPwaInstalled = ref(false)
 
 
 // const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
@@ -47,21 +49,52 @@ const errors = ref({
 const refVForm = ref()
 
 const credentials = ref({
-  email: 'ga@aag.co.id',
+  email: 'info@ordivapos.com',
   password: '12341234',
 })
-
+const dummyData= {
+      token: '663|Mo8WQlPcn91kzM9On0Lqn89XYDskqSp41HFIGAH9507a287b',
+      email: 'putrasheva.aag@gmail.com',
+      idi: 989,
+      role: 5,
+      cabang: 1,
+      nama: 'putratech',
+      photo: ''
+    }
 const rememberMe = ref(false)
+
+const askInstallPwaAfterLogin = async () => {
+  if (typeof window === 'undefined')
+    return
+  if (isPwaInstalled.value || !deferredInstallPrompt.value)
+    return
+
+  const shouldInstall = window.confirm('Install aplikasi Kasir di perangkat ini?')
+  if (!shouldInstall)
+    return
+
+  const promptEvent = deferredInstallPrompt.value
+  promptEvent.prompt()
+  await promptEvent.userChoice
+  deferredInstallPrompt.value = null
+}
 
 const login = async () => {
   loading.value=true
+  // const token = JSON.stringify(dummyData)
+  // console.log(token);
+  //   localStorage.setItem('userData', token)
+  // location.reload();
   try {
-    const res = await axios.post('https://test.atrindo.network/api/logon', {
+    const res = await axios.post('https://back.ordivapos.com/api/login', {
       email: credentials.value.email,
       password: credentials.value.password,
     })
+    console.log(res);
+    
     const token = JSON.stringify(res.data)
     localStorage.setItem('userData', token)
+    await askInstallPwaAfterLogin()
     location.reload();
     console.log(res);
       router.replace('/dashboards/academy')
@@ -76,6 +109,8 @@ const login = async () => {
       router.replace(route.query.to ? String(route.query.to) : '/')
     })
   } catch (err) {
+    
+    
     console.error(err)
   }
   loading.value=false
@@ -89,6 +124,17 @@ const onSubmit = () => {
 }
 
 onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault()
+      deferredInstallPrompt.value = event
+    })
+    window.addEventListener('appinstalled', () => {
+      isPwaInstalled.value = true
+      deferredInstallPrompt.value = null
+    })
+  }
+
   const userData = localStorage.getItem('userData')
   const data = JSON.parse(userData)
   if (data) {
@@ -101,7 +147,7 @@ onMounted(() => {
   <RouterLink to="/">
     <div class="auth-logo d-flex align-center gap-x-3">
       <VNodeRenderer :nodes="themeConfig.app.logo"/>
-      <h1 class="auth-title"style="color: black;">
+      <h1 class="auth-title"style="color: white;">
         {{ themeConfig.app.title }}
       </h1>
     </div>
@@ -199,7 +245,7 @@ onMounted(() => {
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
 
-                <div class="d-flex align-center flex-wrap justify-space-between my-6">
+                <!-- <div class="d-flex align-center flex-wrap justify-space-between my-6">
                   <VCheckbox
                     v-model="rememberMe"
                     label="Remember me"
@@ -210,7 +256,7 @@ onMounted(() => {
                   >
                     Forgot Password?
                   </RouterLink>
-                </div>
+                </div> -->
 
                 <VBtn
                 :loading="loading"
@@ -222,7 +268,7 @@ onMounted(() => {
               </VCol>
 
               <!-- create account -->
-              <VCol
+              <!-- <VCol
                 cols="12"
                 class="text-center"
               >
@@ -241,15 +287,15 @@ onMounted(() => {
                 <VDivider />
                 <span class="mx-4">or</span>
                 <VDivider />
-              </VCol>
+              </VCol> -->
 
               <!-- auth providers -->
-              <VCol
+              <!-- <VCol
                 cols="12"
                 class="text-center"
               >
                 <AuthProvider />
-              </VCol>
+              </VCol> -->
             </VRow>
           </VForm>
         </VCardText>

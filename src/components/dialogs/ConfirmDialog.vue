@@ -40,14 +40,16 @@ const updateModelValue = val => {
 
 const onConfirmation = () => {
   emit('confirm', true)
-  updateModelValue(false)
-  unsubscribed.value = true
+  // updateModelValue(false)
+  emit('update:isDialogVisible', true)
+
+  // unsubscribed.value = true
 }
 
 const onCancel = () => {
   emit('confirm', false)
   emit('update:isDialogVisible', false)
-  cancelled.value = true
+  // cancelled.value = true
 }
 </script>
 

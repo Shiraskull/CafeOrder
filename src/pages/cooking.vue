@@ -1,4 +1,7 @@
 <script setup>
+/**
+ * Dapur: menampilkan cookingOrders (hanya pesanan status 'order' dari store).
+ */
 import { useOrderStore } from '@/plugins/store/orderStore'
 import { watch, onMounted } from 'vue'
 
@@ -11,21 +14,24 @@ definePage({
 
 const orderStore = useOrderStore()
 
+/**
+ * Muat pesanan dari API ke store. cookingOrders hanya menampilkan status 'order';
+ * tanpa fetchOrder(), daftar dapur tetap kosong meskipun halaman dibuka langsung.
+ */
+onMounted(() => {
+  orderStore.fetchOrder().catch(() => {})
+})
+
 // ✅ DEBUG YANG BENAR: PAKAI WATCH (BUKAN CONSOLE.LOG DI ROOT)
 watch(() => orderStore.cookingOrders, (newOrders, oldOrders) => {
   console.log('🍳 Cooking orders berubah!', {
     jumlah_lama: oldOrders?.length || 0,
     jumlah_baru: newOrders.length,
-    orders: newOrders.map(o => ({ meja: o.meja, status: o.status }))
+    orders: newOrders.map(meja => ({ nomor: meja.nomor, total_orders: meja.orders?.length || 0 })),
   })
-  console.log( orderStore.cookingOrders);
+  console.log(orderStore.cookingOrders)
   
 }, { deep: true, immediate: true })
-
-// ✅ CEK AWAL via onMounted (AMAN)
-onMounted(() => {
-  // console.log('🔄 Halaman cooking dimuat, cookingOrders:', orderStore.cookingOrders.length)
-})
 
 const parseTableNumber = meja => {
   const matched = String(meja || '').match(/\d+/)
@@ -37,16 +43,18 @@ const rawTables = computed(() => {
   console.log('📊 rawTables dihitung ulang, data:', orderStore.cookingOrders.length)
   
   return orderStore.cookingOrders
-    .map(order => ({
-      id: order.id,
-      number: parseTableNumber(order.meja),
-      orders: order.items.map((item, index) => ({
-        id: `${order.id}-${index}`,
-        name: item.name,
-        qty: item.qty,
-        note: item.note || item.catatan || '',
-        image: item.image || '',
-      })),
+    .map(meja => ({
+      id: meja.nomor,
+      number: parseTableNumber(meja.nomor),
+      orders: (meja.orders || []).flatMap(order =>
+        (order.items || []).map((item, index) => ({
+          id: `${order.id}-${index}`,
+          name: item.name,
+          qty: item.qty,
+          note: item.note || item.catatan || '',
+          image: item.image || '',
+        })),
+      ),
     }))
     // .sort((a, b) => a.number - b.number)
 })

@@ -360,6 +360,13 @@
     "onWatcherCleanup": true,
     "useId": true,
     "useModel": true,
-    "useTemplateRef": true
+    "useTemplateRef": true,
+    "buildFilledMatchKeySet": true,
+    "buildTableRowsFromStores": true,
+    "extractTableNumberFromLabel": true,
+    "matchKeysForOrderMeja": true,
+    "matchKeysForTableRow": true,
+    "normalizeTableNameKey": true,
+    "tableRowFromApi": true
   }
 }

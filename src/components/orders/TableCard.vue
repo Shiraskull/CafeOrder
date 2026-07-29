@@ -71,7 +71,7 @@ const formatStatus = (status) => {
   >
     <VCardItem class="py-2">
       <VCardTitle class="d-flex align-center justify-space-between">
-        <span class="texst-h2 font-weight-bold">Meja {{ table.number }}</span>
+        <span class="texst-h2 font-weight-bold">{{ table.tableName }}</span>
         <div>
           <VChip
             size="small"

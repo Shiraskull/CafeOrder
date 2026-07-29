@@ -3,7 +3,7 @@ import axios from 'axios'
 
 
 const api = axios.create({
-    baseURL: 'https://test.atrindo.network/api/',
+    baseURL: 'https://back.ordivapos.com/api/',
     // withCredentials: true,
     xsrfCookieName: 'XSRF-TOKEN',
     xsrfHeaderName: 'X-XSRF-TOKEN',
@@ -15,15 +15,15 @@ const api = axios.create({
 api.interceptors.request.use(config => {
     const local = getLocal()
     const token = local.token // token login user
-    const secretKey = import.meta.env.VITE_API_SECRET_KEY // secret dari .env
+    // const secretKey = import.meta.env.VITE_API_SECRET_KEY // secret dari .env
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
 
-  if (secretKey) {
-    config.headers['x-secret-key'] = secretKey // header kustom
-  }
+  // if (secretKey) {
+  //   config.headers['x-secret-key'] = secretKey // header kustom
+  // }
 
   return config
 }, error => {

@@ -11,7 +11,7 @@ const local = getLocal()
 
 export const { themeConfig, layoutConfig } = defineThemeConfig({
   app: { 
-    title: 'Shin Cafe',
+    title: 'ordivapos',
      logo: h('img', {src:logo, alt:'logo',width:local == null ? '60':'30'}),
     contentWidth: ContentWidth.Boxed,
     contentLayoutNav: AppContentLayoutNav.Vertical,

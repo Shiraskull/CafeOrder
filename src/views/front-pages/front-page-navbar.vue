@@ -378,17 +378,15 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
         <div class="d-flex gap-x-4">
           <NavbarThemeSwitcher />
 
-          <VBtn
-            v-if="$vuetify.display.lgAndUp"
-            prepend-icon="tabler-shopping-cart"
-            variant="elevated"
-            color="primary"
-            href="https://1.envato.market/vuexy_admin"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Purchase Now
-          </VBtn>
+            <VBtn
+          v-if="$vuetify.display.lgAndUp"
+          prepend-icon="tabler-shopping-cart"
+          variant="elevated"
+          color="primary"
+          to="/myLogon"
+        >
+          Login
+        </VBtn>
 
           <VBtn
             v-else
