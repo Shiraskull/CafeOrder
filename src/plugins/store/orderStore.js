@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import api from "@/plugins/axios";
+import { echo } from "@/plugins/echo";
 
 /**
  * Store pesanan kasir/dapur/history.
@@ -246,6 +247,18 @@ export const useOrderStore = defineStore("order", () => {
     return res.data;
   }
 
+  let pesananRealtimeStarted = false;
+
+  function startPesananRealtime() {
+    if (pesananRealtimeStarted) return;
+    if (typeof echo?.channel !== "function") return;
+
+    pesananRealtimeStarted = true;
+    echo.channel("pesanan").listen(".pesanan.baru", () => {
+      fetchOrder();
+    });
+  }
+
   /**
    * GET /pesanans/details — hanya pesanan aktif.
    */
@@ -258,6 +271,7 @@ export const useOrderStore = defineStore("order", () => {
         ? res.data
         : res.data?.data ?? [];
       orders.value = groupPesananByMeja(rawPesanans);
+      startPesananRealtime();
       return orders.value;
     } catch (err) {
       console.error("fetchOrder error:", err);

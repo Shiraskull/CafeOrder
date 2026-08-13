@@ -91,18 +91,27 @@ const grandTotal = computed(() =>
 const ordersWithStatus = status =>
   currentTableOrders.value.filter(order => order.status === status)
 
-const hasOrderStatus = computed(() => ordersWithStatus('order').length > 0)
-const hasAntarStatus = computed(() => ordersWithStatus('antar').length > 0)
+/** Antar Semua: semua pesanan di meja masih status order */
+const canAntarSemua = computed(() => {
+  const list = currentTableOrders.value
+  return list.length > 0 && list.every(order => order.status === 'order')
+})
+
+/** Selesai (per meja): semua pesanan di meja sudah diantar */
+const canSelesaiMeja = computed(() => {
+  const list = currentTableOrders.value
+  return list.length > 0 && list.every(order => order.status === 'antar')
+})
 
 const confirmSelesaiQuestion = computed(() => {
   const ids = pendingSelesaiIds.value
   if (ids.length > 1)
-    return `Yakin menyelesaikan ${ids.length} pesanan ini?`
+    return `Yakin menyelesaikan semua pesanan di meja ini (${ids.length} pesanan)?`
 
   if (ids.length === 1)
-    return `Yakin menyelesaikan pesanan Order ${ids[0]}?`
+    return `Yakin menyelesaikan pesanan di meja ini?`
 
-  return 'Yakin menyelesaikan pesanan ini?'
+  return 'Yakin menyelesaikan pesanan di meja ini?'
 })
 
 const statusLabel = status => {
@@ -153,12 +162,8 @@ const handleAntarOrder = async orderId => {
   }
 }
 
-const handleSelesaiOrder = group => {
-  openConfirmSelesai([group.id_order])
-}
-
 const handleAntarSemua = async () => {
-  if (isUpdating.value)
+  if (isUpdating.value || !canAntarSemua.value)
     return
 
   const targets = ordersWithStatus('order')
@@ -179,7 +184,10 @@ const handleAntarSemua = async () => {
   }
 }
 
-const handleSelesaiSemua = () => {
+const handleSelesaiMeja = () => {
+  if (!canSelesaiMeja.value)
+    return
+
   const antarOrders = ordersWithStatus('antar')
   if (!antarOrders.length)
     return
@@ -296,9 +304,11 @@ const onConfirmSelesai = async () => {
               </VListItem>
             </VList>
 
-            <div class="d-flex justify-end ga-2 mt-3">
+            <div
+              v-if="group.status === 'order'"
+              class="d-flex justify-end ga-2 mt-3"
+            >
               <VBtn
-                v-if="group.status === 'order'"
                 size="small"
                 color="warning"
                 variant="tonal"
@@ -307,16 +317,6 @@ const onConfirmSelesai = async () => {
                 @click="handleAntarOrder(group.id_order)"
               >
                 Antar
-              </VBtn>
-              <VBtn
-                v-else-if="group.status === 'antar'"
-                size="small"
-                color="success"
-                variant="tonal"
-                :disabled="isUpdating"
-                @click="handleSelesaiOrder(group)"
-              >
-                Selesai
               </VBtn>
             </div>
           </VCardText>
@@ -334,7 +334,7 @@ const onConfirmSelesai = async () => {
         <VBtn
           color="warning"
           variant="tonal"
-          :disabled="!hasOrderStatus || isUpdating"
+          :disabled="!canAntarSemua || isUpdating"
           :loading="isUpdating"
           @click="handleAntarSemua"
         >
@@ -343,8 +343,8 @@ const onConfirmSelesai = async () => {
         <VBtn
           color="success"
           variant="tonal"
-          :disabled="!hasAntarStatus || isUpdating"
-          @click="handleSelesaiSemua"
+          :disabled="!canSelesaiMeja || isUpdating"
+          @click="handleSelesaiMeja"
         >
           Selesai Semua
         </VBtn>

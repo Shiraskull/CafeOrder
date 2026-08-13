@@ -1,5 +1,6 @@
 <script setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { resetEcho } from '@/plugins/echo'
 
 const router = useRouter()
 const ability = useAbility()
@@ -42,6 +43,7 @@ onMounted(() => {
 })
 
 const logout = async () => {
+  resetEcho()
   localStorage.removeItem('userData')
 
   useCookie('accessToken').value = null

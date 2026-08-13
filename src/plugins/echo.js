@@ -10,6 +10,7 @@ let echoInstance = null;
 
 function getEcho() {
   if (typeof window === "undefined") return null;
+  if (!import.meta.env.VITE_PUSHER_APP_KEY) return null;
   if (!echoInstance) {
     const token = getLocal()?.token ?? "";
     echoInstance = new Echo({
@@ -51,7 +52,11 @@ const echoProxy =
         {
           get(_, prop) {
             const instance = getEcho();
-            return instance?.[prop];
+            const value = instance?.[prop];
+            if (typeof value === "function")
+              return value.bind(instance);
+
+            return value;
           },
         },
       )
