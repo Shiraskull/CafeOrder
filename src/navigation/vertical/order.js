@@ -15,6 +15,10 @@ export default [
         title: 'Cooking',
         to: 'cooking',
       },
+      {
+        title: 'History',
+        to: 'order-history',
+      },
     ],
     // badgeContent: '5',
     badgeClass: 'bg-error',

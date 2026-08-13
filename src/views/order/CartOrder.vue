@@ -20,8 +20,18 @@ const activeCategory = ref('')
 const ALL_CATEGORIES = '__all__'
 
 const categoryList = computed(() => {
+  const withSemua = list => {
+    if (!list.length)
+      return [{ id: ALL_CATEGORIES, label: 'Semua', icon: 'tabler-layout-grid' }]
+    if (list.length === 1)
+      return list
+
+    return [{ id: ALL_CATEGORIES, label: 'Semua', icon: 'tabler-layout-grid' }, ...list]
+  }
+
   if (props.categories?.length)
-    return props.categories
+    return withSemua(props.categories)
+
   const seen = new Set()
   const out = []
   for (const p of props.menuItems) {
@@ -31,15 +41,12 @@ const categoryList = computed(() => {
     seen.add(String(c))
     out.push({
       id: String(c),
-      label: String(c),
+      label: p.categoryName || String(c),
       icon: 'tabler-category',
     })
   }
-  if (!out.length)
-    return [{ id: ALL_CATEGORIES, label: 'Semua', icon: 'tabler-layout-grid' }]
-  if (out.length === 1)
-    return out
-  return [{ id: ALL_CATEGORIES, label: 'Semua', icon: 'tabler-layout-grid' }, ...out]
+
+  return withSemua(out)
 })
 
 watch(categoryList, list => {
@@ -50,6 +57,12 @@ watch(categoryList, list => {
     activeCategory.value = list[0].id
 }, { immediate: true })
 
+const activeCategoryLabel = computed(() => {
+  const cat = categoryList.value.find(c => c.id === activeCategory.value)
+
+  return cat?.label || 'kategori ini'
+})
+
 const filteredItems = computed(() => {
   let list
   if (!activeCategory.value || activeCategory.value === ALL_CATEGORIES)
@@ -57,7 +70,9 @@ const filteredItems = computed(() => {
   else
     list = props.menuItems.filter(item => String(item.category) === String(activeCategory.value))
   const q = searchQuery.value.trim().toLowerCase()
-  if (q) list = list.filter(item => item.name.toLowerCase().includes(q))
+  if (q)
+    list = list.filter(item => item.name.toLowerCase().includes(q))
+
   return list
 })
 
@@ -93,14 +108,20 @@ const onAddToCart = item => {
             color="success"
             variant="flat"
           >
-            <VIcon icon="tabler-search" size="20" />
+            <VIcon
+              icon="tabler-search"
+              size="20"
+            />
           </VBtn>
         </template>
       </VTextField>
     </div>
 
     <div class="cart-order-grid-scroll">
-      <div class="cart-order-grid">
+      <div
+        v-if="filteredItems.length"
+        class="cart-order-grid"
+      >
         <VCard
           v-for="item in filteredItems"
           :key="item.id"
@@ -125,6 +146,26 @@ const onAddToCart = item => {
           </VCardText>
         </VCard>
       </div>
+
+      <VCard
+        v-else
+        variant="tonal"
+        class="cart-order-empty"
+      >
+        <VCardText class="text-center py-10">
+          <VIcon
+            icon="tabler-box-off"
+            size="40"
+            class="mb-3 text-medium-emphasis"
+          />
+          <div class="text-body-1 font-weight-medium">
+            Belum ada item untuk kategori ini
+          </div>
+          <div class="text-caption text-medium-emphasis mt-1">
+            {{ activeCategoryLabel }}
+          </div>
+        </VCardText>
+      </VCard>
     </div>
 
     <div class="cart-order-categories">
@@ -184,6 +225,10 @@ const onAddToCart = item => {
   gap: 0.5rem;
   align-content: start;
   padding-block-end: 0.5rem;
+}
+
+.cart-order-empty {
+  margin-block: 1rem;
 }
 
 .cart-order-card {

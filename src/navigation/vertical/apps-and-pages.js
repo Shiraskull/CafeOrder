@@ -29,6 +29,10 @@ export default [
         to: 'cooking',
       },
       {
+        title: 'History',
+        to: 'order-history',
+      },
+      {
         title: 'Items',
         to: 'items',
       },

@@ -12,9 +12,8 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-// import api from '@/plugins/axios'
+import api from '@/plugins/axios'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 
 const authThemeImg = useGenerateImageVariant(authV2Login,authV2Login,authV2Login,authV2Login)
 console.log(authV2Login);
@@ -86,7 +85,7 @@ const login = async () => {
   //   localStorage.setItem('userData', token)
   // location.reload();
   try {
-    const res = await axios.post('https://back.ordivapos.com/api/login', {
+    const res = await api.post('login', {
       email: credentials.value.email,
       password: credentials.value.password,
     })

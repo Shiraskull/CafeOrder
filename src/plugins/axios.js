@@ -1,9 +1,11 @@
 import getLocal from '@/plugins/local'
 import axios from 'axios'
 
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
+const baseURL = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`
 
 const api = axios.create({
-    baseURL: 'https://back.ordivapos.com/api/',
+    baseURL,
     // withCredentials: true,
     xsrfCookieName: 'XSRF-TOKEN',
     xsrfHeaderName: 'X-XSRF-TOKEN',
@@ -13,8 +15,7 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
-    const local = getLocal()
-    const token = local.token // token login user
+    const token = getLocal()?.token
     // const secretKey = import.meta.env.VITE_API_SECRET_KEY // secret dari .env
 
   if (token) {

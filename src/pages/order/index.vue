@@ -48,7 +48,7 @@ const resolveTableStatus = orders => {
 }
 
 /**
- * Data untuk grid TableCard dari cashierOrders (sementara: semua pesanan per meja, tanpa filter status).
+ * Data untuk grid TableCard dari cashierOrders (hanya order aktif: order | antar).
  */
 const tables = computed(() => {
   return order.cashierOrders

@@ -124,22 +124,51 @@ const tables = computed(() =>
 /** Produk dari GET /products (productStore). */
 const displayMenuItems = computed(() => productStore.products)
 
-/** Tab kategori: sementara hanya dari produk (categoryStore hanya di-fetch + di-log, belum dipakai). */
+/** Tab kategori: tampilkan nama (dari produk.category_name / categoryStore). */
 const cartCategories = computed(() => {
+  const nameById = new Map()
+
+  for (const p of productStore.products) {
+    if (p.category == null)
+      continue
+    if (p.categoryName)
+      nameById.set(String(p.category), p.categoryName)
+  }
+
+  const nav = categoryStore.categoryNavItems
+  if (nav.length) {
+    return nav.map(c => {
+      const id = String(c.id)
+      const fromProduct = nameById.get(id)
+      const label = fromProduct
+        || (c.label && !/^\d+$/.test(String(c.label)) ? c.label : null)
+        || `Kategori ${id}`
+
+      return {
+        id,
+        label,
+        icon: c.icon || 'tabler-category',
+      }
+    })
+  }
+
   if (!productStore.products.length)
     return null
+
   const seen = new Set()
   const out = []
   for (const p of productStore.products) {
-    if (seen.has(p.category))
+    if (p.category == null || seen.has(String(p.category)))
       continue
-    seen.add(p.category)
+    const id = String(p.category)
+    seen.add(id)
     out.push({
-      id: p.category,
-      label: p.category,
+      id,
+      label: nameById.get(id) || p.categoryName || `Kategori ${id}`,
       icon: 'tabler-category',
     })
   }
+
   return out.length ? out : null
 })
 
@@ -385,7 +414,7 @@ onMounted(async () => {
             {{ productStore.error }}
           </VAlert>
           <CartOrder
-            v-else-if="displayMenuItems.length"
+            v-else-if="displayMenuItems.length || cartCategories?.length"
             :menu-items="displayMenuItems"
             :categories="cartCategories"
             @add-to-cart="addToCart"

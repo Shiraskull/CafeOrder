@@ -17,6 +17,9 @@ function normalizeProductList(payload) {
 function categoryKeyForProduct(p) {
   return String(
     p.category_id
+    ?? p.id_cate
+    ?? p.category?.id_cate
+    ?? p.category?.id
     ?? p.kategori_id
     ?? p.id_kategori
     ?? p.id_category

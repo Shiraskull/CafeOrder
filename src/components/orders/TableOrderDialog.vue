@@ -1,7 +1,6 @@
 <script setup>
 import { useOrderStore } from '@/plugins/store/orderStore'
 import { computed } from 'vue'
-import PaymentMethodDialog from '@/views/order/PaymentMethodDialog.vue'
 
 const props = defineProps({
   modelValue: {
@@ -17,42 +16,58 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const orderStore = useOrderStore()
 
-const isPaymentDialogOpen = ref(false)
+/** id order yang akan diselesaikan (bisa 1 atau banyak) */
+const pendingSelesaiIds = ref([])
+const isConfirmSelesaiOpen = ref(false)
+const isUpdating = ref(false)
+
+const snackbarShow = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref('success')
+
+const showSnackbar = (msg, color = 'success') => {
+  snackbarText.value = String(msg || '')
+  snackbarColor.value = color
+  snackbarShow.value = true
+}
+
+const resolveErrorMessage = err =>
+  err?.response?.data?.message
+  || err?.message
+  || 'Terjadi kesalahan'
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value),
 })
 
-const grandTotal = computed(() => {
-  if (!props.table)
-    return 0
-
-  return props.table.orderGroups?.reduce((sum, group) => sum + (group.total || 0), 0)
-    ?? props.table.orders.reduce((sum, item) => sum + item.qty * item.price, 0)
-})
-
 const currentTableOrders = computed(() => {
   if (!props.table)
     return []
 
-  return orderStore.orders.find(meja => meja.nomor === props.table.id)?.orders || []
+  const all = orderStore.orders.find(meja => meja.nomor === props.table.id)?.orders || []
+
+  // Sama seperti cashierOrders: jangan tampilkan yang sudah selesai
+  return all.filter(order => ['order', 'antar'].includes(order.status))
 })
 
-const hasOrderStatus = computed(() => currentTableOrders.value.some(order => order.status === 'order'))
-const hasAntarStatus = computed(() => currentTableOrders.value.some(order => order.status === 'antar'))
-
+/** Selalu dari store agar status live setelah Antar/Selesai */
 const orderGroups = computed(() => {
   if (!props.table)
     return []
 
-  if (props.table.orderGroups?.length)
-    return props.table.orderGroups
+  const source = currentTableOrders.value.length
+    ? currentTableOrders.value
+    : (props.table.orderGroups || []).map(g => ({
+      id: g.id_order,
+      status: g.status,
+      waktu: g.waktu,
+      items: g.items,
+    }))
 
-  // fallback: build from store (kalau modal dipakai dari page lain)
-  return currentTableOrders.value.map(orderItem => {
+  return source.map(orderItem => {
     const items = (orderItem.items || []).map((item, index) => ({
-      id: `${orderItem.id}-${index}`,
+      id: item.id || `${orderItem.id}-${index}`,
       name: item.name,
       qty: item.qty,
       price: Number(item.price || 0),
@@ -60,7 +75,7 @@ const orderGroups = computed(() => {
     }))
 
     return {
-      id_order: orderItem.id,
+      id_order: orderItem.id ?? orderItem.id_order,
       status: orderItem.status,
       waktu: orderItem.waktu,
       items,
@@ -69,38 +84,142 @@ const orderGroups = computed(() => {
   })
 })
 
-const actionLabel = computed(() => {
-  if (hasOrderStatus.value)
-    return 'Antar'
-  if (hasAntarStatus.value)
-    return 'Selesai'
+const grandTotal = computed(() =>
+  orderGroups.value.reduce((sum, group) => sum + (group.total || 0), 0),
+)
 
-  return 'Selesai'
+const ordersWithStatus = status =>
+  currentTableOrders.value.filter(order => order.status === status)
+
+const hasOrderStatus = computed(() => ordersWithStatus('order').length > 0)
+const hasAntarStatus = computed(() => ordersWithStatus('antar').length > 0)
+
+const confirmSelesaiQuestion = computed(() => {
+  const ids = pendingSelesaiIds.value
+  if (ids.length > 1)
+    return `Yakin menyelesaikan ${ids.length} pesanan ini?`
+
+  if (ids.length === 1)
+    return `Yakin menyelesaikan pesanan Order ${ids[0]}?`
+
+  return 'Yakin menyelesaikan pesanan ini?'
 })
 
-const canProcessOrder = computed(() => hasOrderStatus.value || hasAntarStatus.value)
+const statusLabel = status => {
+  const labels = {
+    order: 'Order',
+    antar: 'Di Antar',
+    selesai: 'Selesai',
+    batal: 'Batal',
+  }
 
-const handleProcessOrder = () => {
-  if (!props.table || !canProcessOrder.value)
+  return labels[status] || status || '-'
+}
+
+const statusColor = status => {
+  if (status === 'order')
+    return 'warning'
+  if (status === 'antar')
+    return 'success'
+
+  return 'info'
+}
+
+const openConfirmSelesai = orderIds => {
+  pendingSelesaiIds.value = orderIds.map(String)
+  isConfirmSelesaiOpen.value = true
+}
+
+const closeConfirmSelesai = () => {
+  isConfirmSelesaiOpen.value = false
+  pendingSelesaiIds.value = []
+}
+
+const handleAntarOrder = async orderId => {
+  if (isUpdating.value)
     return
 
-  if (hasOrderStatus.value) {
-    currentTableOrders.value
-      .filter(order => order.status === 'order')
-      .forEach(order => orderStore.sendOrder(order.id))
-    isOpen.value = false
+  isUpdating.value = true
+  try {
+    await orderStore.sendOrder(String(orderId))
+    showSnackbar(`Order ${orderId} berhasil diantar`, 'success')
   }
-  else if (hasAntarStatus.value) {
-    isPaymentDialogOpen.value = true
+  catch (err) {
+    console.error('Gagal antar order:', err)
+    showSnackbar(resolveErrorMessage(err), 'error')
+  }
+  finally {
+    isUpdating.value = false
   }
 }
 
-const onPaymentConfirm = () => {
-  currentTableOrders.value
-    .filter(order => order.status === 'antar')
-    .forEach(order => orderStore.markAsPaid(order.id))
-  isPaymentDialogOpen.value = false
-  isOpen.value = false
+const handleSelesaiOrder = group => {
+  openConfirmSelesai([group.id_order])
+}
+
+const handleAntarSemua = async () => {
+  if (isUpdating.value)
+    return
+
+  const targets = ordersWithStatus('order')
+  if (!targets.length)
+    return
+
+  isUpdating.value = true
+  try {
+    await Promise.all(targets.map(order => orderStore.sendOrder(order.id)))
+    showSnackbar(`${targets.length} order berhasil diantar`, 'success')
+  }
+  catch (err) {
+    console.error('Gagal antar semua:', err)
+    showSnackbar(resolveErrorMessage(err), 'error')
+  }
+  finally {
+    isUpdating.value = false
+  }
+}
+
+const handleSelesaiSemua = () => {
+  const antarOrders = ordersWithStatus('antar')
+  if (!antarOrders.length)
+    return
+
+  openConfirmSelesai(antarOrders.map(o => o.id))
+}
+
+const onConfirmSelesai = async () => {
+  if (isUpdating.value)
+    return
+
+  const ids = [...pendingSelesaiIds.value]
+  if (!ids.length)
+    return
+
+  isUpdating.value = true
+  try {
+    await Promise.all(ids.map(id => orderStore.markAsPaid(id)))
+    isConfirmSelesaiOpen.value = false
+    pendingSelesaiIds.value = []
+    showSnackbar(
+      ids.length > 1
+        ? `${ids.length} order berhasil diselesaikan`
+        : `Order ${ids[0]} berhasil diselesaikan`,
+      'success',
+    )
+
+    const stillActive = currentTableOrders.value.some(o =>
+      ['order', 'antar'].includes(o.status),
+    )
+    if (!stillActive)
+      isOpen.value = false
+  }
+  catch (err) {
+    console.error('Gagal selesaikan order:', err)
+    showSnackbar(resolveErrorMessage(err), 'error')
+  }
+  finally {
+    isUpdating.value = false
+  }
 }
 </script>
 
@@ -122,15 +241,15 @@ const onPaymentConfirm = () => {
           class="mb-4"
         >
           <template #title>
-            <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+            <div class="d-flex align-center justify-space-between flex-wrap gap-2 w-100">
               <span class="text-subtitle-2 font-weight-bold">Order {{ group.id_order }}</span>
-              <div class="d-flex align-center ga-2">
+              <div class="d-flex align-center ga-2 flex-wrap">
                 <VChip
                   size="small"
-                  :color="group.status === 'order' ? 'warning' : (group.status === 'antar' ? 'success' : 'info')"
+                  :color="statusColor(group.status)"
                   variant="tonal"
                 >
-                  {{ group.status }}
+                  {{ statusLabel(group.status) }}
                 </VChip>
                 <span class="text-body-2 font-weight-bold">
                   Rp {{ Number(group.total || 0).toLocaleString('id-ID') }}
@@ -176,6 +295,30 @@ const onPaymentConfirm = () => {
                 </template>
               </VListItem>
             </VList>
+
+            <div class="d-flex justify-end ga-2 mt-3">
+              <VBtn
+                v-if="group.status === 'order'"
+                size="small"
+                color="warning"
+                variant="tonal"
+                :loading="isUpdating"
+                :disabled="isUpdating"
+                @click="handleAntarOrder(group.id_order)"
+              >
+                Antar
+              </VBtn>
+              <VBtn
+                v-else-if="group.status === 'antar'"
+                size="small"
+                color="success"
+                variant="tonal"
+                :disabled="isUpdating"
+                @click="handleSelesaiOrder(group)"
+              >
+                Selesai
+              </VBtn>
+            </div>
           </VCardText>
         </AppCardActions>
       </VCardText>
@@ -187,14 +330,23 @@ const onPaymentConfirm = () => {
         <strong>Rp {{ grandTotal.toLocaleString('id-ID') }}</strong>
       </VCardText>
 
-      <VCardActions>
+      <VCardActions class="flex-wrap ga-2">
+        <VBtn
+          color="warning"
+          variant="tonal"
+          :disabled="!hasOrderStatus || isUpdating"
+          :loading="isUpdating"
+          @click="handleAntarSemua"
+        >
+          Antar Semua
+        </VBtn>
         <VBtn
           color="success"
           variant="tonal"
-          :disabled="!canProcessOrder"
-          @click="handleProcessOrder"
+          :disabled="!hasAntarStatus || isUpdating"
+          @click="handleSelesaiSemua"
         >
-          {{ actionLabel }}
+          Selesai Semua
         </VBtn>
         <VSpacer />
         <VBtn
@@ -205,13 +357,48 @@ const onPaymentConfirm = () => {
         </VBtn>
       </VCardActions>
     </VCard>
-
-    <PaymentMethodDialog
-      v-model="isPaymentDialogOpen"
-      :total="grandTotal"
-      @confirm="onPaymentConfirm"
-    />
   </VDialog>
+
+  <VDialog
+    v-model="isConfirmSelesaiOpen"
+    max-width="420"
+    persistent
+  >
+    <VCard>
+      <VCardTitle>Konfirmasi</VCardTitle>
+      <VCardText>
+        {{ confirmSelesaiQuestion }}
+      </VCardText>
+      <VCardActions>
+        <VSpacer />
+        <VBtn
+          variant="text"
+          :disabled="isUpdating"
+          @click="closeConfirmSelesai"
+        >
+          Batal
+        </VBtn>
+        <VBtn
+          color="success"
+          variant="tonal"
+          :loading="isUpdating"
+          :disabled="isUpdating"
+          @click="onConfirmSelesai"
+        >
+          Ya, Selesaikan
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
+  <VSnackbar
+    v-model="snackbarShow"
+    :color="snackbarColor"
+    location="top"
+    :timeout="3000"
+  >
+    {{ snackbarText }}
+  </VSnackbar>
 </template>
 
 <style scoped>

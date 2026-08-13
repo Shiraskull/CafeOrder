@@ -4,81 +4,58 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 const router = useRouter()
 const ability = useAbility()
 
-// TODO: Get type from backend
-const userData = useCookie('userData')
+const readStoredUser = () => {
+  try {
+    const raw = localStorage.getItem('userData')
+    if (!raw)
+      return null
 
-const logout = async () => {
+    const stored = JSON.parse(raw)
+    if (!stored)
+      return null
 
-  // Remove "accessToken" from cookie
-  useCookie('accessToken').value = null
+    const u = stored.user || stored
 
-  // Remove "userData" from cookie
-  userData.value = null
-
-  // Redirect to login page
-  await router.push('/login')
-
-  // ℹ️ We had to remove abilities in then block because if we don't nav menu items mutation is visible while redirecting user to login page
-
-  // Remove "userAbilities" from cookie
-  useCookie('userAbilityRules').value = null
-
-  // Reset ability to initial ability
-  ability.update([])
+    return {
+      fullName: u.name || u.nama || u.fullName || u.username || u.email || 'User',
+      username: u.email || u.username || '',
+      avatar: u.photo || u.avatar || null,
+      role: u.role ?? '',
+    }
+  }
+  catch {
+    return null
+  }
 }
 
-const userProfileList = [
-  { type: 'divider' },
-  {
-    type: 'navItem',
-    icon: 'tabler-user',
-    title: 'Profile',
-    to: {
-      name: 'apps-user-view-id',
-      params: { id: 21 },
-    },
-  },
-  {
-    type: 'navItem',
-    icon: 'tabler-settings',
-    title: 'Settings',
-    to: {
-      name: 'pages-account-settings-tab',
-      params: { tab: 'account' },
-    },
-  },
-  {
-    type: 'navItem',
-    icon: 'tabler-file-dollar',
-    title: 'Billing Plan',
-    to: {
-      name: 'pages-account-settings-tab',
-      params: { tab: 'billing-plans' },
-    },
-    badgeProps: {
-      color: 'error',
-      content: '4',
-    },
-  },
-  { type: 'divider' },
-  {
-    type: 'navItem',
-    icon: 'tabler-currency-dollar',
-    title: 'Pricing',
-    to: { name: 'pages-pricing' },
-  },
-  {
-    type: 'navItem',
-    icon: 'tabler-question-mark',
-    title: 'FAQ',
-    to: { name: 'pages-faq' },
-  },
-]
+const userData = ref({
+  fullName: 'User',
+  username: '',
+  avatar: null,
+  role: '',
+})
+
+onMounted(() => {
+  const data = readStoredUser()
+  if (data)
+    userData.value = data
+})
+
+const logout = async () => {
+  localStorage.removeItem('userData')
+
+  useCookie('accessToken').value = null
+  useCookie('userData').value = null
+  useCookie('userAbilityRules').value = null
+
+  ability.update([])
+  await router.push('/myLogon')
+}
+
 </script>
 
 <template>
   <VBadge
-    v-if="userData"
     dot
     bordered
     location="bottom right"
@@ -89,11 +66,11 @@ const userProfileList = [
     <VAvatar
       size="38"
       class="cursor-pointer"
-      :color="!(userData && userData.avatar) ? 'primary' : undefined"
-      :variant="!(userData && userData.avatar) ? 'tonal' : undefined"
+      :color="!userData.avatar ? 'primary' : undefined"
+      :variant="!userData.avatar ? 'tonal' : undefined"
     >
       <VImg
-        v-if="userData && userData.avatar"
+        v-if="userData.avatar"
         :src="userData.avatar"
       />
       <VIcon
@@ -101,7 +78,6 @@ const userProfileList = [
         icon="tabler-user"
       />
 
-      <!-- SECTION Menu -->
       <VMenu
         activator="parent"
         width="240"
@@ -121,11 +97,11 @@ const userProfileList = [
                   bordered
                 >
                   <VAvatar
-                    :color="!(userData && userData.avatar) ? 'primary' : undefined"
-                    :variant="!(userData && userData.avatar) ? 'tonal' : undefined"
+                    :color="!userData.avatar ? 'primary' : undefined"
+                    :variant="!userData.avatar ? 'tonal' : undefined"
                   >
                     <VImg
-                      v-if="userData && userData.avatar"
+                      v-if="userData.avatar"
                       :src="userData.avatar"
                     />
                     <VIcon
@@ -140,7 +116,10 @@ const userProfileList = [
                 <h6 class="text-h6 font-weight-medium">
                   {{ userData.fullName || userData.username }}
                 </h6>
-                <VListItemSubtitle class="text-capitalize text-disabled">
+                <VListItemSubtitle
+                  v-if="userData.role !== '' && userData.role != null"
+                  class="text-capitalize text-disabled"
+                >
                   {{ userData.role }}
                 </VListItemSubtitle>
               </div>
@@ -148,40 +127,7 @@ const userProfileList = [
           </VListItem>
 
           <PerfectScrollbar :options="{ wheelPropagation: false }">
-            <template
-              v-for="item in userProfileList"
-              :key="item.title"
-            >
-              <VListItem
-                v-if="item.type === 'navItem'"
-                :to="item.to"
-              >
-                <template #prepend>
-                  <VIcon
-                    :icon="item.icon"
-                    size="22"
-                  />
-                </template>
-
-                <VListItemTitle>{{ item.title }}</VListItemTitle>
-
-                <template
-                  v-if="item.badgeProps"
-                  #append
-                >
-                  <VBadge
-                    rounded="sm"
-                    class="me-3"
-                    v-bind="item.badgeProps"
-                  />
-                </template>
-              </VListItem>
-
-              <VDivider
-                v-else
-                class="my-2"
-              />
-            </template>
+            <VDivider class="my-2" />
 
             <div class="px-4 py-2">
               <VBtn
@@ -197,7 +143,6 @@ const userProfileList = [
           </PerfectScrollbar>
         </VList>
       </VMenu>
-      <!-- !SECTION -->
     </VAvatar>
   </VBadge>
 </template>
